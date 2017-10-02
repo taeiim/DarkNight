@@ -26,12 +26,12 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar seekBar;
     private Button button;
     private WaveLoadingView waveView;
+    private int now_bright_status;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Settings.System.putInt(getContentResolver(), "screen_brightness",10);
 
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -46,24 +46,18 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        //자동 밝기모드
-        try {
-            if(Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE) !=1){
-                Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE,1);
-            }
-        } catch (Settings.SettingNotFoundException e) {
-            e.printStackTrace();
-        }
+
 
         waveView = (WaveLoadingView) findViewById(R.id.waveView);
         percentTextView = (TextView) findViewById(R.id.percentTextView);
         seekBar = (SeekBar) findViewById(R.id.seekBar);
         button = (Button) findViewById(R.id.startBtn);
 
+
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if(progress<10){
+                if (progress < 10) {
                     progress = 10;
                     seekBar.setProgress(progress);
                 }
@@ -71,19 +65,21 @@ public class MainActivity extends AppCompatActivity {
                 System.out.println(progress);
                 String stringProgress = Integer.toString(progress);
                 percentTextView.setText(stringProgress);
-                bright = (float) progress/100;
+                bright = (float) progress / 100;
 
-                button.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        Toast.makeText(MainActivity.this,"button Click",Toast.LENGTH_SHORT).show();
-                        Settings.System.putInt(getContentResolver(), "screen_brightness",10);
-                        WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
-                        layoutParams.screenBrightness = bright;
-                        getWindow().setAttributes(layoutParams);
-                    }
-                });
+                if(button.getText().toString().equals("STOP")){
 
+
+                    Settings.System.putInt(getContentResolver(), "screen_brightness", (int) (bright * 255));
+                    Log.d("system bright----------", String.valueOf((int) (bright * 255)));
+                    WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
+                    layoutParams.screenBrightness = bright;
+                    getWindow().setAttributes(layoutParams);
+
+
+                }else if(button.getText().toString().equals("START")){
+
+                }
             }
 
             @Override
@@ -99,26 +95,57 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-//        button.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//
-////                seekbar.setOnSeekbarChangeListener(new OnSeekbarChangeListener() {
-////                    @Override
-////                    public void valueChanged(Number value) {
-////                        String stringValue = value.toString();
-////                        bright = Integer.parseInt(stringValue);
-////                        percentTextView.setText(stringValue);
-////                    }
-////                });
-//                Toast.makeText(MainActivity.this,"click",Toast.LENGTH_SHORT).show();
-////                Settings.System.putInt(getContentResolver(), "screen_brightness",60);
-////                WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
-////                layoutParams.screenBrightness = 0.65f;
-////                getWindow().setAttributes(layoutParams);
-//            }
-//        });
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                if(button.getText().toString().equals("START")){
+                    try {
+                        now_bright_status = android.provider.Settings.System.getInt(getContentResolver(),
+                                android.provider.Settings.System.SCREEN_BRIGHTNESS);
+                    } catch (Exception e) {
+                        Log.e("Exception e " + e.getMessage(), null);
+                    }
+                    Log.d("현재밝기--------------",String.valueOf(now_bright_status));
+                    button.setText("STOP");
+
+                    Settings.System.putInt(getContentResolver(), "screen_brightness", (int) (bright * 255));
+                    Log.d("system bright----------", String.valueOf((int) (bright * 255)));
+                    WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
+                    layoutParams.screenBrightness = bright;
+                    getWindow().setAttributes(layoutParams);
+
+                    //자동 밝기모드
+                    try {
+                        if (Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE) == 1) {
+                            Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, 0);
+                        }
+                    } catch (Settings.SettingNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                }else if(button.getText().toString().equals("STOP")){
+                    button.setText("START");
+                    Settings.System.putInt(getContentResolver(), "screen_brightness", now_bright_status);
+                    WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
+                    layoutParams.screenBrightness = now_bright_status/255;
+                    getWindow().setAttributes(layoutParams);
+
+                    //자동 밝기모드
+                    try {
+                        if (Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE) != 1) {
+                            Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, 1);
+                        }
+                    } catch (Settings.SettingNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
+
     }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -129,5 +156,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Settings.System.putInt(getContentResolver(), "screen_brightness", now_bright_status);
+    }
 }

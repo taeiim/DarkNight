@@ -100,7 +100,7 @@
         android:id="@+id/startBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="시작"
+        android:text="START"
         android:textColor="#FFFFFF"
         android:background="@color/colorAccent"
         android:layout_margin="20dp"/>
